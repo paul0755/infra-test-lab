@@ -1,2 +1,2 @@
 # infra-test-lab
-Docker + Github Action + EC2 + ECS + ECR + RDS 환경 세팅 
+Docker + Github Action + EC2 +  ECR + RDS 환경 세팅 
