@@ -44,6 +44,13 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      # 캐시 기능을 위해 buildx 드라이버 container 모드로 변경
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+          driver-opts: image=moby/buildkit:latest
+
       # 7️⃣ Docker 이미지 빌드 + ECR에 Push / 레이어 캐싱 -> 빠른 빌드 속도
       - name: Build and push Docker image (ARM64 only)
         uses: docker/build-push-action@v5
@@ -53,7 +60,7 @@ jobs:
           push: true
           tags: ${{ steps.login-ecr.outputs.registry }}/techpost-backend:latest
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=max, ignore-error=true
 
       # 8️⃣ EC2에 SSH 접속 후 deploy.sh 실행 → 자동 배포
       - name: Deploy to EC2 using SSH
