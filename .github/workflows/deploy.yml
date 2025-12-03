@@ -1,15 +1,16 @@
-name: Deploy to EC2
+name: Deploy Backend
 
 on:
   push:
-    branches: ["deploy"]
+    branches:
+      - deploy
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Set up JDK 21
@@ -18,13 +19,10 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      - name: Build Spring Boot project
+      - name: Build without tests
         run: ./gradlew bootJar -x test
 
-      - name: Configure AWS Credentials
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -35,20 +33,20 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build & Push Docker Image
+      - name: Build and push Docker image
         run: |
-          docker build -t ${{ steps.login-ecr.outputs.registry }}/techpost-backend:latest .
-          docker push ${{ steps.login-ecr.outputs.registry }}/techpost-backend:latest
+          docker buildx build \
+            --platform linux/amd64 \
+            -t ${{ steps.login-ecr.outputs.registry }}/techpost-backend:latest \
+            --push .
 
-      # ===== SSH to EC2 and Deploy =====
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v0.1.10
+      - name: Deploy to EC2 using SSH
+        uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
+          username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            docker pull ${{ steps.login-ecr.outputs.registry }}/techpost-backend:latest
-            docker stop techpost || true
-            docker rm techpost || true
-            docker run -d -p 8080:8080 --name techpost ${{ steps.login-ecr.outputs.registry }}/techpost-backend:latest
+            cd /home/ubuntu
+            chmod +x deploy.sh
+            ./deploy.sh
