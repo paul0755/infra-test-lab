@@ -43,6 +43,13 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      # 멀티 플랫폼을 위해 Docker Buildx 설치
+      - name: Set up Docker Buildx (container driver)
+        uses: docker/setup-buildx-action@v3
+        with:
+          install: true
+          driver-opts: image=moby/buildkit:master
+
       # 7️⃣ Docker 이미지 빌드 + ECR에 Push
       - name: Build and push Docker image
         run: |
