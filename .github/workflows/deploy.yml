@@ -1,5 +1,6 @@
 name: Deploy Backend
 
+# 🚀 deploy 브랜치로 push될 때마다 CI/CD 자동 실행
 on:
   push:
     branches:
@@ -7,21 +8,29 @@ on:
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # GitHub Actions가 실행되는 가상머신 환경
 
     steps:
+      # 1️⃣ 레포지토리 코드 체크아웃
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 2️⃣ JDK 21 설치
       - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
           java-version: '21'
           distribution: 'temurin'
 
+      # 3️⃣ gradlew 실행 권한 부여
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 4️⃣ 테스트 생략하고 Spring Boot Jar 빌드
       - name: Build without tests
         run: ./gradlew bootJar -x test
 
+      # 5️⃣ AWS 접근을 위한 액세스 키/시크릿 키 설정
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
@@ -29,24 +38,27 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-2
 
+      # 6️⃣ ECR 로그인 → Docker Push 권한 획득
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      # 7️⃣ Docker 이미지 빌드 + ECR에 Push
       - name: Build and push Docker image
         run: |
           docker buildx build \
-            --platform linux/amd64 \
+            --platform linux/amd64 \   # EC2 환경에 맞는 OS/ARCH로 빌드
             -t ${{ steps.login-ecr.outputs.registry }}/techpost-backend:latest \
             --push .
 
+      # 8️⃣ EC2에 SSH 접속 후 deploy.sh 실행 → 자동 배포
       - name: Deploy to EC2 using SSH
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
+          host: ${{ secrets.EC2_HOST }}       # EC2 퍼블릭 IP
+          username: ubuntu                    # EC2 기본 유저
+          key: ${{ secrets.EC2_SSH_KEY }}     # GitHub Secrets에 저장된 PEM 키
           script: |
             cd /home/ubuntu
-            chmod +x deploy.sh
-            ./deploy.sh
+            chmod +x deploy.sh                # deploy.sh 실행 권한 보장
+            ./deploy.sh                       # 🔥 자동 배포 실행
