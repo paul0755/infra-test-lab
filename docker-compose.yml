@@ -2,18 +2,6 @@ version: '3.9'
 
 services:
 
-  mysql:
-    image: mysql:8
-    container_name: mysql
-    restart: always
-    ports:
-      - "3307:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-    volumes:
-      - mysql-data:/var/lib/mysql
-
   redis:
     image: redis:latest
     container_name: redis
@@ -24,27 +12,23 @@ services:
       - redis-data:/data
 
   app:
-    build: .
+    image: ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest
     container_name: spring-app
+    restart: always
     depends_on:
-      - mysql
       - redis
     ports:
       - "8080:8080"
 
-    # 반드시 env_file을 먼저 선언
     env_file:
       - .env
+
     environment:
-      DB_URL: jdbc:mysql://mysql:3306/${DB_NAME}
-      DB_USERNAME: root
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: 6379
-    # 개발 중 JAR 자동 빌드를 위해 src 실시간 매핑 (선택)
-    volumes:
-      - ./build/libs:/app/build/libs
 
 volumes:
-  mysql-data:
   redis-data:
