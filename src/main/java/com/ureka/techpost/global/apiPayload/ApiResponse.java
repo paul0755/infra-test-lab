@@ -1,4 +1,11 @@
 package com.ureka.techpost.global.apiPayload;
+/**
+ * @file ApiReponse.java
+ @author 장예찬
+ @version 1.0
+ @since 2025-12-05
+ @description 이 파일은 API 응답을 통일하는 클래스입니다.
+ */
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
