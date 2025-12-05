@@ -45,6 +45,8 @@ out/
 
 ### application ###
 /src/main/resources/application.yml
+/src/main/resources/application-dev.yml
+/src/main/resources/application-prod.yml
 
 # QueryDSL generated sources
 src/main/generated/
